@@ -1,103 +1,203 @@
 import os
-import re
 import urllib.parse
 
-def print_logo():
-    logo = """
-\033[91m██╗     ██╗███╗   ██╗██╗  ██╗    ███████╗ ██████╗ █████╗ ███╗   ██╗
-██║     ██║████╗  ██║██║  ██║    ██╔════╝██╔════╝██╔══██╗████╗  ██║
-██║     ██║██╔██╗ ██║███████║    ███████╗██║     ███████║██╔██╗ ██║
-██║     ██║██║╚██╗██║██╔══██║    ╚════██║██║     ██╔══██║██║╚██╗██║
-███████╗██║██║ ╚████║██║  ██║    ███████║╚██████╗██║  ██║██║ ╚████║
-╚══════╝╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝    ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝\033[0m
-   \033[92m[+]-- CHAOS LINK SCANNER v1.0 - ANTI-PHISHING TRACER --[+]\033[0m
-"""
-    print(logo)
+# =========================
+# CHAOS LINK SCANNER v2.0
+# =========================
+
+OFFICIAL_DOMAINS = {
+    "dana": ["dana.id"],
+    "gopay": ["gopay.co.id"],
+    "ovo": ["ovo.id"],
+    "shopee": ["shopee.co.id", "shopee.com"],
+}
+
+SCAM_KEYWORDS = [
+    "dana",
+    "gopay",
+    "ovo",
+    "shopee",
+    "hadiah",
+    "klaim",
+    "claim",
+    "undian",
+    "bonus",
+    "saldo",
+    "kaget",
+]
+
+SUSPICIOUS_TLDS = [
+    ".top",
+    ".xyz",
+    ".site",
+    ".online",
+    ".vip",
+    ".club",
+    ".buzz",
+    ".tk",
+    ".ml",
+    ".ga",
+    ".cf",
+    ".gq",
+]
+
+
+def clear():
+    os.system("cls" if os.name == "nt" else "clear")
+
+
+def banner():
+    print(r"""
+██╗     ██╗███╗   ██╗██╗  ██╗
+██║     ██║████╗  ██║██║ ██╔╝
+██║     ██║██╔██╗ ██║█████╔╝
+██║     ██║██║╚██╗██║██╔═██╗
+███████╗██║██║ ╚████║██║  ██╗
+╚══════╝╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝
+
+    CHAOS LINK SCANNER v2.0
+    URL Safety Analyzer
+""")
+
+
+def is_official_domain(domain):
+    for domains in OFFICIAL_DOMAINS.values():
+        for official in domains:
+            if domain == official or domain.endswith("." + official):
+                return True
+    return False
+
 
 def scan_link(url):
-    # Bersihkan input url
     url = url.strip()
-    if not url.startswith(('http://', 'https://')):
-        url = 'https://' + url
-        
+
+    if not url.startswith(("http://", "https://")):
+        url = "https://" + url
+
     try:
-        parsed_url = urllib.parse.urlparse(url)
-        domain = parsed_url.netloc.lower()
-        path = parsed_url.path.lower()
-    except:
-        return "\033[91m[-] Format URL tidak valid, Bos!\033[0m"
+        parsed = urllib.parse.urlparse(url)
 
-    print(f"\n\033[94m[*] Menganalisis Target:\033[0m {url}")
-    print(f"\033[94m[*] Domain Utama     :\033[0m {domain}")
-    print("-" * 60)
+        domain = parsed.netloc.lower()
+        path = parsed.path.lower()
 
-    # 1. Daftar Domain Resmi yang Sering Ditiru (White List)
-    official_dana = "dana.id"
-    
-    # Keyword sensitif penipuan
-    scam_keywords = ['dana', 'gopay', 'ovo', 'shopee', 'klaim', 'hadiah', 'undian', 'sukses', 'bagisaldo', 'kaget']
-    
-    # TLD / Ekstensi domain murah yang sering dipakai scammer
-    scam_tlds = ['.top', '.xyz', '.site', '.online', '.club', '.vip', '.buzz', '.tk', '.ml', '.ga', '.cf', '.gq', '.apwm']
+    except Exception:
+        return {
+            "status": "ERROR",
+            "reasons": ["Format URL tidak valid."]
+        }
 
-    is_phishing = False
-    alasan = []
+    reasons = []
+    score = 0
 
-    # Cek apakah domain mengandung kata DANA dll tapi BUKAN domain resmi dana.id
-    for keyword in scam_keywords:
-        if keyword in domain:
-            if official_dana not in domain:
-                is_phishing = True
-                alasan.append(f"Menggunakan nama tiruan '{keyword}' bukan pada situs resminya.")
+    # APK Detection
+    if path.endswith(".apk"):
+        reasons.append("Link langsung mengarah ke file APK.")
+        score += 5
 
-    # Cek ekstensi domain sampah (.top, .xyz, dll)
-    for tld in scam_tlds:
-        if domain.endswith(tld) or tld in domain:
-            is_phishing = True
-            alasan.append(f"Menggunakan ekstensi domain mencurigakan ({tld}) yang biasa dipakai penipuan.")
+    # Suspicious TLD
+    for tld in SUSPICIOUS_TLDS:
+        if domain.endswith(tld):
+            reasons.append(f"Menggunakan TLD mencurigakan ({tld}).")
+            score += 2
 
-    # Cek jika link langsung mengarah ke file APK berbahaya
-    if path.endswith('.apk'):
-        return """\033[41m\033[97m   [ BAHAYA PETAKA: LINK UNDUHAN APK MALWARE ]   \033[0m
-\033[91m[!] KESIMPULAN: PALSU & SANGAT BERBAHAYA!\033[0m
-\033[93m[Detail]     : Link ini langsung mengunduh file aplikasi (.apk). 
-               Besar kemungkinan ini malware peretas SMS/M-Banking (APK Phishing).\033[0m
-\033[91m[Tindakan]   : JANGAN DIKLIK, JANGAN DI-INSTALL!\033[0m"""
+    # Brand Impersonation
+    for brand, official_domains in OFFICIAL_DOMAINS.items():
 
-    # Cetak Hasil Akhir yang Mudah Dipahami
-    if is_phishing:
-        hasil = f"""\033[41m\033[97m   [ PERINGATAN: LINK PHISHING / PALSU DETECTED ]   \033[0m
-\033[91m[!] KESIMPULAN: 100% PALSU / INDIKASI PENIPUAN!\033[0m
-\033[93m[Alasan Analisis]:\033[0m"""
-        for index, item in enumerate(alasan, 1):
-            hasil += f"\n  {index}. {item}"
-        hasil += f"\n\n\033[92m[Tips Aman]   : Situs resmi DANA hanya menggunakan domain \033[5m\033[96mdana.id\033[0m\033[92m. Di luar itu FIX MALING DATA.\033[0m"
-        return hasil
+        if brand in domain:
+
+            trusted = False
+
+            for official in official_domains:
+                if domain == official or domain.endswith("." + official):
+                    trusted = True
+                    break
+
+            if not trusted:
+                reasons.append(
+                    f"Nama brand '{brand}' muncul pada domain yang bukan domain resmi."
+                )
+                score += 4
+
+    # Keyword overload
+    keyword_count = sum(
+        1 for keyword in SCAM_KEYWORDS
+        if keyword in domain
+    )
+
+    if keyword_count >= 2:
+        reasons.append(
+            "Terlalu banyak keyword promosi/brand pada domain."
+        )
+        score += 2
+
+    # Final verdict
+    if score >= 6:
+        status = "HIGH RISK"
+    elif score >= 3:
+        status = "SUSPICIOUS"
+    elif is_official_domain(domain):
+        status = "OFFICIAL"
     else:
-        # Peringatan kalau domainnya gak dikenal tapi gak masuk radar blacklist
-        if official_dana in domain:
-            return """\033[42m\033[97m   [ LINK AMAN / RESMI ]   \033[0m
-\033[92m[+] KESIMPULAN: LINK AMAN.\033[0m
-\033[92m[Detail]     : Ini adalah domain resmi milik brand terkait.\033[0m"""
-        else:
-            return """\033[43m\033[30m   [ PERINGATAN: DOMAIN TIDAK DIKENAL ]   \033[0m
-\033[93m[!] KESIMPULAN: MENCURIGAKAN (Harus Waspada).\033[0m
-\033[93m[Detail]     : Tools tidak menemukan kecocokan domain resmi, namun tidak ada indikasi 
-               mendompleng nama DANA. Tetap jangan masukkan data sensitif (No HP/PIN).\033[0m"""
+        status = "UNKNOWN"
 
-def main():
-    os.system('clear')
-    print_logo()
-    print("=" * 66)
-    target_url = input("\033[96m[*] Masukkan URL/Link yang mau di-scan: \033[0m").strip()
-    
-    if not target_url:
-        print("\033[91m[-] Input kosong, Bos!\033[0m")
+    return {
+        "status": status,
+        "domain": domain,
+        "url": url,
+        "score": score,
+        "reasons": reasons
+    }
+
+
+def print_result(result):
+
+    if result["status"] == "ERROR":
+        print("\n[ERROR]")
+        print(result["reasons"][0])
         return
 
-    hasil_scan = scan_link(target_url)
-    print(hasil_scan)
-    print("=" * 66)
+    print("\n" + "=" * 60)
+    print(f"URL    : {result['url']}")
+    print(f"DOMAIN : {result['domain']}")
+    print(f"SCORE  : {result['score']}")
+    print("=" * 60)
+
+    if result["status"] == "OFFICIAL":
+        print("[+] Domain resmi terdeteksi.")
+
+    elif result["status"] == "HIGH RISK":
+        print("[!] RISIKO TINGGI")
+        print("Kemungkinan phishing atau penipuan.")
+
+    elif result["status"] == "SUSPICIOUS":
+        print("[!] MENCURIGAKAN")
+        print("Perlu verifikasi lebih lanjut.")
+
+    else:
+        print("[?] DOMAIN TIDAK DIKENAL")
+        print("Belum ditemukan indikator kuat.")
+
+    if result["reasons"]:
+        print("\nAlasan:")
+        for i, reason in enumerate(result["reasons"], 1):
+            print(f"{i}. {reason}")
+
+    print("=" * 60)
+
+
+def main():
+    clear()
+    banner()
+
+    url = input("\nMasukkan URL: ").strip()
+
+    if not url:
+        print("URL tidak boleh kosong.")
+        return
+
+    result = scan_link(url)
+    print_result(result)
+
 
 if __name__ == "__main__":
     main()
