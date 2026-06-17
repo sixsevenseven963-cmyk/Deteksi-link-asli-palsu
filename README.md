@@ -1,2 +1,11 @@
-# Deteksi-link-asli-palsu
-Automatic script for detecting fake or safe and unsafe links and, automation for security testing and system optimization. Use with caution."
+# Deteksi Link Asli atau Palsu
+
+### Cara Install:
+
+```bash
+pkg update && pkg upgrade -y
+pkg install python git -y
+git clone https://github.com/sixsevenseven963-cmyk/Deteksi-link-asli-palsu.git
+cd Deteksi-link-asli-palsu
+python link.py
+```
